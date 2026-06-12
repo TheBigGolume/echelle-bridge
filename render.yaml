@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: echelle-roblox-bridge
+    runtime: node
+    buildCommand: npm install
+    startCommand: node echelle-bridge.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ROBLOX_UNIVERSE_ID
+        sync: false
+      - key: ROBLOX_API_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false

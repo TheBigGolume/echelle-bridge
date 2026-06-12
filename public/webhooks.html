@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Echelle Roblox — Webhooks</title>
+  <style>
+    :root {
+      --bg:       #0d0d1a;
+      --surface:  #1a1a2e;
+      --border:   #2d2d4e;
+      --accent:   #7c3aed;
+      --accent2:  #a78bfa;
+      --text:     #e2e8f0;
+      --muted:    #94a3b8;
+      --success:  #22c55e;
+      --error:    #ef4444;
+      --warning:  #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 {
+      font-size: 2rem;
+      color: var(--accent2);
+      margin-bottom: 0.4rem;
+    }
+    header p { color: var(--muted); font-size: 0.9rem; }
+    .ip-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1.25rem;
+      max-width: 640px;
+      margin: 0 auto 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+    }
+    .ip-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--warning);
+      flex-shrink: 0;
+    }
+    .ip-dot.ok   { background: var(--success); }
+    .ip-dot.err  { background: var(--error); }
+    .section { margin-bottom: 2.5rem; max-width: 900px; margin-inline: auto; }
+    .section h2 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .card-label {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .card-url {
+      font-size: 0.7rem;
+      color: var(--muted);
+      word-break: break-all;
+      background: #111;
+      border-radius: 6px;
+      padding: 0.3rem 0.5rem;
+    }
+    .card-actions { display: flex; gap: 0.5rem; }
+    button {
+      flex: 1;
+      padding: 0.4rem 0.5rem;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 700;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+    .btn-copy { background: var(--border); color: var(--text); }
+    .btn-copy.copied { background: var(--success); color: #fff; }
+    .btn-test { background: var(--accent); color: #fff; }
+    .btn-test.ok  { background: var(--success); }
+    .btn-test.err { background: var(--error); }
+    .status-bar {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 3rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Echelle Roblox — Webhooks</h1>
+  <p>Déclenche des actions en jeu via HTTP POST</p>
+</header>
+
+<div class="ip-bar" id="ipBar">
+  <span class="ip-dot" id="ipDot"></span>
+  <span id="ipText">Vérification de votre IP…</span>
+</div>
+
+<div id="sections"></div>
+
+<div class="status-bar">POST /webhook/&lt;action&gt; — authentifié par IP</div>
+
+<script>
+  const BASE = window.location.origin;
+
+  // ─── IP status ──────────────────────────────────────────────────────────
+  async function checkIP() {
+    try {
+      const r    = await fetch(`${BASE}/my-ip`);
+      const data = await r.json();
+      const dot  = document.getElementById('ipDot');
+      const txt  = document.getElementById('ipText');
+      if (data.registered) {
+        dot.className = 'ip-dot ok';
+        txt.textContent = `✅ IP enregistrée — joueur : ${data.username}  (${data.ip})`;
+      } else {
+        dot.className = 'ip-dot err';
+        txt.textContent = `❌ IP non enregistrée (${data.ip}) — connecte-toi au jeu et scanne le QR code`;
+      }
+    } catch {
+      document.getElementById('ipText').textContent = 'Impossible de joindre le serveur';
+    }
+  }
+  checkIP();
+
+  // ─── Actions ────────────────────────────────────────────────────────────
+  async function loadActions() {
+    let actions;
+    try {
+      const r = await fetch(`${BASE}/actions`);
+      actions = await r.json();
+    } catch {
+      document.getElementById('sections').innerHTML =
+        '<p style="color:var(--error);text-align:center">Serveur inaccessible</p>';
+      return;
+    }
+
+    // Grouper par catégorie
+    const cats = {};
+    for (const a of actions) {
+      if (!cats[a.category]) cats[a.category] = [];
+      cats[a.category].push(a);
+    }
+
+    const container = document.getElementById('sections');
+    for (const [cat, items] of Object.entries(cats)) {
+      const sec   = document.createElement('div');
+      sec.className = 'section';
+      const h2  = document.createElement('h2');
+      h2.textContent = cat;
+      sec.appendChild(h2);
+      const grid = document.createElement('div');
+      grid.className = 'grid';
+
+      for (const item of items) {
+        const url  = `${BASE}/webhook/${item.action}`;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-label">${item.label}</div>
+          <div class="card-url">${url}</div>
+          <div class="card-actions">
+            <button class="btn-copy" data-url="${url}">📋 Copier</button>
+            <button class="btn-test" data-url="${url}">▶ Tester</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+      sec.appendChild(grid);
+      container.appendChild(sec);
+    }
+
+    // ─── Copier ─────────────────────────────────────────────────────────
+    document.querySelectorAll('.btn-copy').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(btn.dataset.url).catch(() => {});
+        btn.textContent = '✅ Copié !';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 Copier'; btn.classList.remove('copied'); }, 1500);
+      });
+    });
+
+    // ─── Tester ─────────────────────────────────────────────────────────
+    document.querySelectorAll('.btn-test').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const orig = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '…';
+        try {
+          const r = await fetch(btn.dataset.url, { method: 'POST', body: '{}',
+            headers: { 'Content-Type': 'application/json' } });
+          if (r.status === 401) {
+            btn.textContent = '🔒 Non enregistré';
+            btn.classList.add('err');
+          } else if (r.ok) {
+            btn.textContent = '✅ Envoyé !';
+            btn.classList.add('ok');
+          } else {
+            btn.textContent = `❌ ${r.status}`;
+            btn.classList.add('err');
+          }
+        } catch {
+          btn.textContent = '❌ Réseau';
+          btn.classList.add('err');
+        }
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.classList.remove('ok', 'err');
+          btn.disabled = false;
+        }, 2000);
+      });
+    });
+  }
+
+  loadActions();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "echelle-roblox-bridge",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node echelle-bridge.js",
+    "dev": "nodemon echelle-bridge.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongodb": "^6.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
