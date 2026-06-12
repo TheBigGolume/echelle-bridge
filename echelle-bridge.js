@@ -124,6 +124,10 @@ function auth(req, res, next) {
   next();
 }
 
+// ─── Routes de base ───────────────────────────────────────────────────────
+app.get('/', (_req, res) => res.redirect('/webhooks'));
+app.get('/webhooks', (_req, res) => res.sendFile(join(__dirname, 'public', 'webhooks.html')));
+
 // ─── Ping (pré-réveil Render) ─────────────────────────────────────────────
 app.get('/ping', (_req, res) => res.send('pong'));
 
@@ -288,6 +292,7 @@ async function start() {
     console.log(`[Echelle Bridge]   GET  /generate-pin`);
     console.log(`[Echelle Bridge]   GET  /register`);
     console.log(`[Echelle Bridge]   GET  /my-ip\n`);
+
   });
 }
 
