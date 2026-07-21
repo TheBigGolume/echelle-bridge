@@ -35,6 +35,7 @@ export const ACTIONS = [
   { action: 'liberer', label: 'Libérer (tous)', category: '🔒 Prison' },
 
   // ⚡ Boosts
-  { action: 'boost',      label: 'Boost Multiplicateur', category: '⚡ Boosts' },
-  { action: 'roue_boost', label: 'Roue Multiplicateur',  category: '⚡ Boosts' },
+  { action: 'boost',       label: 'Boost Multiplicateur', category: '⚡ Boosts' },
+  { action: 'roue_boost',  label: 'Roue Multiplicateur',  category: '⚡ Boosts' },
+  { action: 'roue_action', label: "Roue d'Actions",       category: '⚡ Boosts' },
 ];
