@@ -15,13 +15,11 @@ export const ACTIONS = [
   { action: 'reset_win', label: 'Reset Win', category: '🔄 Reset' },
 
   // ⬆️ Hauteur
-  { action: '+5m',   label: '+5m',   category: '⬆️ Hauteur' },
   { action: '+50m',  label: '+50m',  category: '⬆️ Hauteur' },
   { action: '+150m', label: '+150m', category: '⬆️ Hauteur' },
   { action: '+500m', label: '+500m', category: '⬆️ Hauteur' },
 
   // ⬇️ Hauteur
-  { action: '-5m',   label: '-5m',   category: '⬇️ Hauteur' },
   { action: '-50m',  label: '-50m',  category: '⬇️ Hauteur' },
   { action: '-150m', label: '-150m', category: '⬇️ Hauteur' },
   { action: '-500m', label: '-500m', category: '⬇️ Hauteur' },
