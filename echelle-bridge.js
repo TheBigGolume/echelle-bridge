@@ -5,6 +5,7 @@ import { dirname, join  } from 'path';
 import { connectDB, loadIPs, upsertIP, removeIP, loadPins, upsertPin } from './db.js';
 import { sendToRoblox } from './roblox-bridge.js';
 import { ACTIONS       } from './actions.js';
+import { securityHeaders, rateLimit } from './security.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
@@ -15,7 +16,10 @@ const SEED_IPS = process.env.ALLOWED_IPS
     : [];
 
 const app = express();
+app.disable('x-powered-by');
 app.set('trust proxy', true);
+app.use(securityHeaders);
+app.use(rateLimit({ windowMs: 60_000, max: 120, keyPrefix: 'global' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, 'public')));
@@ -30,10 +34,12 @@ SEED_IPS.forEach(ip => registeredIPs.set(ip, { username: null }));
 const actionMap = new Map(ACTIONS.map(a => [a.action, a]));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
+// req.ip (pas un parsing manuel de x-forwarded-for) : Express applique déjà
+// la logique "trust proxy" ci-dessus, qui gère correctement le nombre de
+// sauts de proxy — un parsing manuel prendrait la première valeur du header
+// sans jamais vérifier qu'elle vient bien de la chaîne de proxy de confiance.
 function getClientIP(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return req.socket?.remoteAddress || req.ip;
+  return req.ip;
 }
 
 function generatePin() {
@@ -128,11 +134,11 @@ function auth(req, res, next) {
 app.get('/', (_req, res) => res.redirect('/webhooks'));
 app.get('/webhooks', (_req, res) => res.sendFile(join(__dirname, 'public', 'webhooks.html')));
 
-// ─── Ping (pré-réveil Render) ─────────────────────────────────────────────
+// ─── Ping (garde le service éveillé, cf. bot/siteKeepAlive.js) ────────────
 app.get('/ping', (_req, res) => res.send('pong'));
 
 // ─── generate-pin (appelé par BridgeSetup Roblox) ─────────────────────────
-app.get('/generate-pin', (req, res) => {
+app.get('/generate-pin', rateLimit({ max: 20, keyPrefix: 'generate-pin' }), (req, res) => {
   const user = req.query.user;
   if (!user) return res.status(400).json({ error: 'user requis' });
 
@@ -158,7 +164,8 @@ app.get('/generate-pin', (req, res) => {
 });
 
 // ─── register (visité par le joueur dans son navigateur) ──────────────────
-app.get('/register', async (req, res) => {
+// Rate limit serré : c'est la cible d'un éventuel brute-force du PIN (6 chiffres).
+app.get('/register', rateLimit({ max: 15, keyPrefix: 'register' }), async (req, res) => {
   const { pin, user } = req.query;
   if (!pin || !user) return res.status(400).send(htmlPage('Paramètres manquants', false, 'Les paramètres <b>pin</b> et <b>user</b> sont requis.'));
 
@@ -283,7 +290,7 @@ async function start() {
     console.warn('[DB] MongoDB indisponible — fonctionnement en mémoire seule');
   }
 
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n[Echelle Bridge] ✓ Démarré sur le port ${PORT}`);
     console.log(`[Echelle Bridge]   ${actionMap.size} actions disponibles`);
     for (const action of actionMap.keys()) {
