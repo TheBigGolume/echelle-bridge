@@ -255,10 +255,15 @@ app.get('/api/webhooks', auth, (req, res) => {
 });
 
 // ─── Webhooks (authentifiés par IP) ──────────────────────────────────────
+// Actions connues (ACTIONS) OU slug de TP personnalisé (défini côté jeu dans
+// le menu config, pas connu ici) : on laisse passer, c'est Roblox qui valide
+// et ignore silencieusement si le slug n'existe pas côté jeu.
+const CUSTOM_SLUG_RE = /^[a-z0-9_]{1,40}$/;
+
 app.post('/webhook/*', auth, async (req, res) => {
   const action = req.path.slice('/webhook/'.length);
 
-  if (!actionMap.has(action)) {
+  if (!actionMap.has(action) && !CUSTOM_SLUG_RE.test(action)) {
     console.warn(`[Webhook] ✗ Action inconnue : "${action}"`);
     return res.status(404).json({ error: `Action inconnue : ${action}` });
   }
