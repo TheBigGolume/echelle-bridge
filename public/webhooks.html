@@ -139,7 +139,10 @@
       grid.className = 'grid';
 
       for (const item of items) {
-        const url  = `${BASE}/webhook/${item.action}`;
+        // {nickname} est substitué par l'outil TikTok (TikFinity…) au moment
+        // du déclenchement → le pseudo du viewer arrive automatiquement en jeu.
+        const url     = `${BASE}/webhook/${item.action}?user={nickname}`;
+        const testUrl = `${BASE}/webhook/${item.action}?user=Test`;
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -147,7 +150,7 @@
           <div class="card-url">${url}</div>
           <div class="card-actions">
             <button class="btn-copy" data-url="${url}">📋 Copier</button>
-            <button class="btn-test" data-url="${url}">▶ Tester</button>
+            <button class="btn-test" data-url="${testUrl}">▶ Tester</button>
           </div>
         `;
         grid.appendChild(card);
