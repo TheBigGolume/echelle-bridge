@@ -107,10 +107,10 @@ function registerSuccessPage(user) {
     <h1>Connexion établie !</h1>
     <p class="sub">Bienvenue <strong>${user}</strong> — tu es bien connecté au jeu.<br>Tu peux fermer cette page et reprendre.</p>
     <div class="notice">
-      <span class="notice-icon">⚠️</span>
+      <span class="notice-icon">✅</span>
       <div class="notice-text">
-        <strong>À refaire à chaque connexion</strong>
-        Chaque fois que tu rejoins le jeu, tu dois ouvrir ce lien à nouveau. Sans ça, les actions webhook ne s'appliqueront pas sur toi.
+        <strong>C'est permanent</strong>
+        Cette autorisation reste active pour toutes tes prochaines parties. Tu n'auras à rouvrir ce lien que si tu changes de réseau (nouvelle IP).
       </div>
     </div>
     <div class="back-btn">↩ Retourne dans le jeu</div>
